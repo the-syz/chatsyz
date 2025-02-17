@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>简易聊天工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f4f4f9;
+    }
+
+    .chat-container {
+      width: 400px;
+      height: 600px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-buttons {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px;
+      background-color: #fff;
+      border-top: 1px solid #ccc;
+    }
+
+    .chat-buttons button {
+      padding: 8px 16px;
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #000;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .chat-buttons button.active {
+      background-color: #e0e0e0;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #fff;
+    }
+
+    .message-row {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    .user-message-row {
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #dcf8c6;
+      position: absolute;
+      right: 5px;
+      top: 0;
+    }
+
+    .user-message {
+      margin: 0;
+      padding: 8px;
+      border-radius: 8px;
+      max-width: calc(100% - 40px);
+      background-color: #dcf8c6;
+      margin-right: 40px;
+    }
+
+    .bot-message-row {
+      justify-content: flex-start;
+      padding-left: 5px;
+    }
+
+    .bot-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #e5e5ea;
+      margin: 0 5px;
+    }
+
+    .bot-message {
+      margin: 0;
+      padding: 8px;
+      border-radius: 8px;
+      max-width: 80%;
+      background-color: #e5e5ea;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .chat-input button {
+      margin-left: 10px;
+      padding: 8px 16px;
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-buttons">
+      <button id="search-button">联网搜索</button>
+      <button id="reasoning-button">推理</button>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="输入你的消息">
+      <button id="send-button">发送</button>
+    </div>
+  </div>
+  <script>
+    const chatMessages = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const searchButton = document.getElementById('search-button');
+    const reasoningButton = document.getElementById('reasoning-button');
+
+    let useSearch = false;
+    let useReasoning = false;
+
+    searchButton.addEventListener('click', () => {
+      useSearch = !useSearch;
+      searchButton.classList.toggle('active');
+    });
+
+    reasoningButton.addEventListener('click', () => {
+      useReasoning = !useReasoning;
+      reasoningButton.classList.toggle('active');
+    });
+
+    // 用户进入时发送一句“你好！”
+    const welcomeMessageRow = document.createElement('div');
+    welcomeMessageRow.classList.add('message-row', 'bot-message-row');
+
+    const botAvatar = document.createElement('div');
+    botAvatar.classList.add('bot-avatar');
+    welcomeMessageRow.appendChild(botAvatar);
+
+    const welcomeMessageElement = document.createElement('div');
+    welcomeMessageElement.classList.add('bot-message');
+    welcomeMessageElement.textContent = '你好！';
+    welcomeMessageRow.appendChild(welcomeMessageElement);
+
+    chatMessages.appendChild(welcomeMessageRow);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    sendButton.addEventListener('click', () => {
+      const message = userInput.value;
+      if (message.trim() !== '') {
+        // 显示用户消息
+        const userMessageRow = document.createElement('div');
+        userMessageRow.classList.add('message-row', 'user-message-row');
+
+        const userAvatar = document.createElement('div');
+        userAvatar.classList.add('user-avatar');
+        userMessageRow.appendChild(userAvatar);
+
+        const userMessageElement = document.createElement('div');
+        userMessageElement.classList.add('user-message');
+        userMessageElement.textContent = message;
+        userMessageRow.appendChild(userMessageElement);
+
+        chatMessages.appendChild(userMessageRow);
+
+        // 显示思考中
+        const thinkingMessageRow = document.createElement('div');
+        thinkingMessageRow.classList.add('message-row', 'bot-message-row');
+
+        const thinkingBotAvatar = document.createElement('div');
+        thinkingBotAvatar.classList.add('bot-avatar');
+        thinkingMessageRow.appendChild(thinkingBotAvatar);
+
+        const thinkingMessageElement = document.createElement('div');
+        thinkingMessageElement.classList.add('bot-message');
+
+        let loadingText = '思考中...';
+        let loadingTime = 1500;
+
+        if (useSearch && useReasoning) {
+          loadingText = '联网搜索并推理中...';
+          loadingTime = 3000;
+        } else if (useSearch) {
+          loadingText = '联网搜索中...';
+          loadingTime = 2500;
+        } else if (useReasoning) {
+          loadingText = '推理中...';
+          loadingTime = 2500;
+        }
+
+        thinkingMessageElement.textContent = loadingText;
+        thinkingMessageRow.appendChild(thinkingMessageElement);
+
+        chatMessages.appendChild(thinkingMessageRow);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // 模拟延迟，然后将思考中替换为“服务器繁忙，请稍后再试。”
+        setTimeout(() => {
+          thinkingMessageElement.textContent = '服务器繁忙，请稍后再试。';
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, loadingTime);
+
+        // 清空输入框
+        userInput.value = '';
+      }
+    });
+
+    userInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        sendButton.click();
+      }
+    });
+  </script>
+</body>
+
+</html>
